@@ -2,6 +2,7 @@ import DocumentExtraction
 import re
 import unidecode
 import string
+import nltk
 from nltk.tokenize import word_tokenize   #splits sentences into words
 from nltk.tokenize import sent_tokenize   #splits text into sentences
 from nltk.stem import WordNetLemmatizer   # a lemmatizer
@@ -32,6 +33,9 @@ class InvertedIndex:
     def lowerText(self, text):
         return text.lower()
     
+    def removePunctuation(self, text):
+        return text.translate(self.punctuation_table)
+
     #convert "can't" to "cannot"
     def removeContractions(self, words):
         contracted = []
@@ -54,7 +58,7 @@ class InvertedIndex:
     
     # converts one whole document into sentence pieces after which further processing is done
     def tokenizeSentences(self, text, fileNum):
-        sentences = sent_tokenize(text)
+        sentences = text.split('.')
         for sentence in sentences:
             sentence = self.removePunctuation(sentence)
             sentence = sentence.strip()
@@ -79,39 +83,23 @@ class InvertedIndex:
         #sort
         self.words = dict(sorted(self.words.items()))
     
+    def displayInvertedIndex(self):
+        for word, postings in self.words.items():
+            print(f"{word} -> {postings}")
+    
+    
+    
 
 
 '''
-{
-    "apple":{
-        1:[0,4]
-        2:[3,5]
-    }
-}
+            {
+                "apple":{
+                    1:[0,4]
+                    2:[3,5]
+                }
+            }
 
-this is the structure of the inverted index
+            this is the structure of the inverted index
 
-'''
-
+ '''   
     
-    
-    
-    
-    
-
-
-
-ob1 = InvertedIndex()
-ob1.readStopWords()
-print(ob1.stopwords)
-        
-    
-    
-
-
-
-ob1 = InvertedIndex()
-ob1.readStopWords()
-print(ob1.stopwords)
-        
-        
