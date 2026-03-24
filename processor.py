@@ -1,105 +1,100 @@
-import DocumentExtraction
 import re
 import unidecode
 import string
-import nltk
-from nltk.tokenize import word_tokenize   #splits sentences into words
-from nltk.tokenize import sent_tokenize   #splits text into sentences
-from nltk.stem import WordNetLemmatizer   # a lemmatizer
-import contractions    
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+import contractions
+import DocumentExtraction  # your module containing Extractedfiles
 
-class InvertedIndex:    
+
+class InvertedIndex:
     def __init__(self):
-        self.words = {}
+        self.words = {}  # main inverted index
         self.stopwords = set()
         self.lemmatizer = WordNetLemmatizer()
-        self.punctuation_table = str.maketrans('', '', r'!"#$%&()*+,-./:;<=>?@[\]^_`{|}~') #remove punctuation from text
-        
-    
-    def readStopWords(self):
-        with open('Stopword-List.txt') as file:
-            lines = file.readlines()
-            for line in lines:
-                self.stopwords.add(line.strip())
+        self.punctuation_table = str.maketrans('', '', string.punctuation)
 
-    def removeStopWords(self, words):
-        self.readStopWords()
-        flt = [word for word in words if word not in self.stopwords]
-        return flt
-    
+    # Load stopwords once
+    def readStopWords(self, filepath='Stopword-List.txt'):
+        with open(filepath) as file:
+            self.stopwords = set(line.strip() for line in file)
+
+    # Remove extra whitespaces
     def removeWhiteSpaces(self, text):
         return re.sub(' +', ' ', text)
-    
+
+    # Lowercase text
     def lowerText(self, text):
         return text.lower()
-    
-    def removePunctuation(self, text):
-        return text.translate(self.punctuation_table)
 
-    #convert "can't" to "cannot"
+    # Remove accents / diacritics
+    def normalizeText(self, text):
+        return unidecode.unidecode(text)
+
+    # Expand contractions like "can't" -> "cannot"
     def removeContractions(self, words):
-        contracted = []
-        for word in words:
-            contracted.append(contractions.fix(word))  #basically to replace contractions with their expanded forms
-        return contracted
-    
-    def wordTokenize(self, sentence, fileNum):
-        words = word_tokenize(sentence)
-        words = self.removeContractions(words)
-        words = self.removeStopWords(words)
-        words = self.lemmatizeWords(words)  
-        self.appendToInvertedIndex(words, fileNum)
-    
+        return [contractions.fix(word) for word in words]
+
+    # Lemmatize words
     def lemmatizeWords(self, words):
-        lemmatized = []
-        for word in words:
-            lemmatized.append(self.lemmatizer.lemmatize(word))
-        return lemmatized
-    
-    # converts one whole document into sentence pieces after which further processing is done
+        return [self.lemmatizer.lemmatize(word) for word in words]
+
     def tokenizeSentences(self, text, fileNum):
-        sentences = text.split('.')
+        sentences = text.split('.')  
+        position = 0  
         for sentence in sentences:
-            sentence = self.removePunctuation(sentence)
             sentence = sentence.strip()
-            self.wordTokenize(sentence, fileNum)
-    
-    def appendToInvertedIndex(self, words, fileNum):
-        for index, word in enumerate(words):
-            
-            #normalize words (lowercase and only letters)
-            word = ''.join(c for c in word.lower() if c.isalpha())
-            
-            if len(word) <= 2 or word in self.stopwords:
+            if not sentence:
                 continue
-            
-            if word not in self.words:
-                self.words[word] = {}
-            if fileNum not in self.words[word]:
-                self.words[word][fileNum] = []
-            
-            self.words[word][fileNum].append(index)
-        
-        #sort
-        self.words = dict(sorted(self.words.items()))
-    
+
+            words = word_tokenize(sentence)
+            words = self.removeContractions(words)
+            words = [w.translate(self.punctuation_table) for w in words]  # remove punctuation
+            words = [self.lemmatizer.lemmatize(w.lower()) for w in words]  # lowercase + lemmatize
+            words = [w for w in words if len(w) > 2 and w not in self.stopwords]  # remove short words & stopwords
+
+            for word in words:
+                
+                if word not in self.words:
+                    self.words[word] = {}
+                    
+                if fileNum not in self.words[word]:
+                    self.words[word][fileNum] = []
+                    
+                self.words[word][fileNum].append(position)
+                position += 1  
+
+    # Display index in console
     def displayInvertedIndex(self):
-        for word, postings in self.words.items():
+        for word, postings in sorted(self.words.items()):
             print(f"{word} -> {postings}")
-    
-    
-    
 
+    def documentProcessing(self):
+        fobj = DocumentExtraction.Extractedfiles()
+        fobj.readData()
+        files = fobj.getfiles()
 
-'''
-            {
-                "apple":{
-                    1:[0,4]
-                    2:[3,5]
-                }
-            }
+        self.readStopWords()  
+        for cnt, doc in enumerate(files, start=0):
+            text = self.removeWhiteSpaces(doc)
+            text = self.lowerText(text)
+            text = self.normalizeText(text)
+            self.tokenizeSentences(text, cnt)
 
-            this is the structure of the inverted index
+        self.words = dict(sorted(self.words.items(), key=lambda term: term[0]))
 
- '''   
-    
+    def writeToFile(self, filename="inverted_index.txt"):
+        with open(filename, "w") as f:
+            for word, postings in sorted(self.words.items()):
+                f.write(f"{word} -> {postings}\n")
+
+    def printPostingList(self):
+        for word, postings in sorted(self.words.items()):
+            print(word, postings)
+
+    #helper function
+    def printSpecificPostingList(self, word):
+        if word in self.words:
+            print(f"{word} -> {self.words[word]}")
+        else:
+            print(f"{word} not found in index.")

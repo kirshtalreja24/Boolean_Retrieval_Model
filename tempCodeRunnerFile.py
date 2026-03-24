@@ -1,0 +1,7 @@
+d1 = DocumentExtraction.Extractedfiles()
+
+d1.readData()
+files = d1.getfiles()
+
+print(len(files))
+
