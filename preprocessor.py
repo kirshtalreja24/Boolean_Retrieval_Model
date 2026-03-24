@@ -9,7 +9,7 @@ from nltk.stem import WordNetLemmatizer   # a lemmatizer
 class InvertedIndex:    
     def __init__(self):
         self.words = {}
-        self.stopwords = []
+        self.stopwords = set()
         self.lemmatizer = WordNetLemmatizer()
         self.punctuation_table = str.maketrans('', '', r'!"#$%&()*+,-./:;<=>?@[\]^_`{|}~') #remove punctuation from text
         
@@ -18,13 +18,18 @@ class InvertedIndex:
         with open('Stopword-List.txt') as file:
             lines = file.readlines()
             for line in lines:
-                self.stopwords.append(line.strip())
+                self.stopwords.add(line.strip())
+
+    def removeStopWords(self, words):
+        self.readStopWords()
+        flt = [word for word in words if word not in self.stopwords]
+        return flt
 
 
 
 
-# ob1 = InvertedIndex()
-# ob1.readStopWords()
-# print(ob1.stopwords)
+ob1 = InvertedIndex()
+ob1.readStopWords()
+print(ob1.stopwords)
         
         
