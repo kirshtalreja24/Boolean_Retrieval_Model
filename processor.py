@@ -34,21 +34,20 @@ class InvertedIndex:
             fixed.extend(expanded.split())
         return fixed
 
-    # ✅ FINAL FIXED VERSION
+    #process the words by removing contractions, fixing hyphenated words, removing punctuation, stemming and removing stopwords
     def processWords(self, words):
         words = self.removeContractions(words)
 
-        # 🔥 FIX: handle hyphen properly
+        # fix hyphenated words
         fixed_words = []
         for w in words:
             w = w.replace('-', ' ')
             fixed_words.extend(w.split())
 
-        # ✅ USE fixed_words (NOT words)
         words = [w.translate(self.punctuation_table) for w in fixed_words]
         words = [w for w in words if w]
 
-        # ✅ stemming
+        #stemming
         words = [self.stemmer.stem(w) for w in words]
 
         words = [w for w in words if len(w) > 2 and w not in self.stopwords]
@@ -102,7 +101,7 @@ class InvertedIndex:
             return sorted(list(self.words[word].keys()))
         return []
 
-    # ✅ Query processing (same logic)
+    # to process the query and return the processed terms
     def processQuery(self, query):
         query = query.lower()
         query = unidecode.unidecode(query)

@@ -5,29 +5,32 @@ index.documentProcessing()
 # index.writeToFile()
 
 
-# ✅ process query properly
-query_terms = index.processQuery("running")
+query_terms = index.processQuery("hammer")
 
 ar1 = []
 for term in query_terms:
     ar1.extend(index.getspecificPostingList(term))
 
 ar1 = sorted(set(ar1))
+ar2 = []
+for i in range(0,56):
+    if i not in ar1:
+        ar2.append(i)
 
-print("Your Output:", ar1)
-print()
 
-arr = ['0', '1', '10', '11', '12', '16', '17', '18', '19', '2', '20', '21',
-       '22', '24', '25', '26', '27', '28', '3', '30', '32', '33', '34',
-       '35', '36', '37', '39', '4', '40', '41', '44', '45', '46', '47',
-       '5', '50', '51', '52', '53', '6', '8', '9']
+# print("Your Output:", ar1)
+# print()
+
+arr = ['31', '28', '37', '30', '7', '10', '14', '1', '6', '41', '15', '11',
+       '29', '26', '52', '13', '32', '44', '4', '8', '22', '38', '48', '0', 
+       '47', '2', '23', '9', '3', '5', '12', '55']
 
 arr = sorted([int(x) for x in arr])
 
 print("Expected:", arr)
 print()
 
-if ar1 == arr:
+if ar2 == arr:
     print("✅ True")
 else:
     print("❌ False")
