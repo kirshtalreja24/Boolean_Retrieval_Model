@@ -1,30 +1,33 @@
-import DocumentExtraction
 import processor
-
-d1 = DocumentExtraction.Extractedfiles()
-
-# d1.readData()
-# files = d1.getfiles()
-
-# print(len(files))
-
-
-
-# index = InvertedIndex()
-# index.readStopWords()
-
-# doc1 = "I can't eat apples. Apples are tasty and healthy!"
-# doc2 = "He is eating an apple, and he likes that apple."
-
-# index.tokenizeSentences(doc1, 1)
-# index.tokenizeSentences(doc2, 2)
-
-# index.displayInvertedIndex()
 
 index = processor.InvertedIndex()
 index.documentProcessing()
-# # index.printPostingList()
-# index.createDictionary()
 # index.writeToFile()
 
-index.printSpecificPostingList("trump")
+
+# ✅ process query properly
+query_terms = index.processQuery("running")
+
+ar1 = []
+for term in query_terms:
+    ar1.extend(index.getspecificPostingList(term))
+
+ar1 = sorted(set(ar1))
+
+print("Your Output:", ar1)
+print()
+
+arr = ['0', '1', '10', '11', '12', '16', '17', '18', '19', '2', '20', '21',
+       '22', '24', '25', '26', '27', '28', '3', '30', '32', '33', '34',
+       '35', '36', '37', '39', '4', '40', '41', '44', '45', '46', '47',
+       '5', '50', '51', '52', '53', '6', '8', '9']
+
+arr = sorted([int(x) for x in arr])
+
+print("Expected:", arr)
+print()
+
+if ar1 == arr:
+    print("✅ True")
+else:
+    print("❌ False")
