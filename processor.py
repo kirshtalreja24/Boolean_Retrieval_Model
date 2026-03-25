@@ -39,6 +39,7 @@ class InvertedIndex:
     def lemmatizeWords(self, words):
         return [self.lemmatizer.lemmatize(word) for word in words]
 
+    # Tokenize sentences, remove punctuation, lemmatize, and build the inverted index
     def tokenizeSentences(self, text, fileNum):
         sentences = text.split('.')  
         position = 0  
@@ -64,11 +65,12 @@ class InvertedIndex:
                 self.words[word][fileNum].append(position)
                 position += 1  
 
-    # Display index in console
+    # helper function to display the inverted index
     def displayInvertedIndex(self):
         for word, postings in sorted(self.words.items()):
             print(f"{word} -> {postings}")
 
+    #controller function to process documents and build the inverted index
     def documentProcessing(self):
         fobj = DocumentExtraction.Extractedfiles()
         fobj.readData()

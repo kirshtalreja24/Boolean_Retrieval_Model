@@ -27,4 +27,4 @@ index.documentProcessing()
 # index.createDictionary()
 # index.writeToFile()
 
-index.printSpecificPostingList("hammer")
+index.printSpecificPostingList("trump")
