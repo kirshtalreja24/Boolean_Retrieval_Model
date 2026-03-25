@@ -117,4 +117,8 @@ class InvertedIndex:
             if len(w) > 2 and w not in self.stopwords:
                 processed.append(w)
 
-        return processed
+        return processed 
+    
+
+
+    
