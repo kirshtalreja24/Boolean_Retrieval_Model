@@ -2,9 +2,6 @@ import streamlit as st
 from processor import InvertedIndex
 from Queries import Queries
 
-# ─────────────────────────────────────────────
-# Page config
-# ─────────────────────────────────────────────
 st.set_page_config(
     page_title="Boolean IR System",
     page_icon="",
@@ -12,9 +9,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ─────────────────────────────────────────────
-# Custom CSS
-# ─────────────────────────────────────────────
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
@@ -124,9 +118,6 @@ hr {
 """, unsafe_allow_html=True)
 
 
-# ─────────────────────────────────────────────
-# Load system — built once, cached after that
-# ─────────────────────────────────────────────
 @st.cache_resource(show_spinner="Building index — please wait...")
 def load_system():
     ii = InvertedIndex()
@@ -135,10 +126,6 @@ def load_system():
 
 ii, qp = load_system()
 
-
-# ─────────────────────────────────────────────
-# Sidebar — query guide only
-# ─────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## 📖 Query Guide")
     st.markdown("---")
@@ -157,9 +144,6 @@ with st.sidebar:
     st.code('"air crash" AND NOT boeing\n(united OR delta) AND plane /2', language="text")
 
 
-# ─────────────────────────────────────────────
-# Main panel
-# ─────────────────────────────────────────────
 st.markdown("""
 <div class="header-strip">
     <h1 style="margin:0; font-size:1.8rem; color:#e8e3d5;">
@@ -185,9 +169,7 @@ with col_btn:
 
 st.markdown("---")
 
-# ─────────────────────────────────────────────
-# Run query and show results
-# ─────────────────────────────────────────────
+#run query and show results
 if search_clicked and query.strip():
     try:
         results = qp.queryInput(query.strip())
