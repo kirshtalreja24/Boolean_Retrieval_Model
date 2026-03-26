@@ -14,19 +14,24 @@ class InvertedIndex:
         self.stemmer = PorterStemmer()
         self.punctuation_table = str.maketrans('', '', string.punctuation)
 
+    # Loads stopwords from a file into a set for fast lookup.
     def readStopWords(self, filepath='Stopword-List.txt'):
         with open(filepath) as file:
             self.stopwords = set(line.strip() for line in file)
 
+    # Collapses multiple consecutive spaces into a single space.
     def removeWhiteSpaces(self, text):
         return re.sub(' +', ' ', text)
 
+    # Converts all characters in the text to lowercase.
     def lowerText(self, text):
         return text.lower()
 
+    # Converts accented or special Unicode characters to their ASCII equivalents.
     def normalizeText(self, text):
         return unidecode.unidecode(text)
 
+    # Expands contractions in a list of words (e.g. "don't" -> "do not").
     def removeContractions(self, words):
         fixed = []
         for word in words:
@@ -34,11 +39,12 @@ class InvertedIndex:
             fixed.extend(expanded.split())
         return fixed
 
-    #process the words by removing contractions, fixing hyphenated words, removing punctuation, stemming and removing stopwords
+    # Cleans and normalizes a list of words by expanding contractions,
+    # splitting hyphenated words, removing punctuation, stemming,
+    # and filtering out stopwords and very short tokens.
     def processWords(self, words):
         words = self.removeContractions(words)
 
-        # fix hyphenated words
         fixed_words = []
         for w in words:
             w = w.replace('-', ' ')
@@ -46,14 +52,13 @@ class InvertedIndex:
 
         words = [w.translate(self.punctuation_table) for w in fixed_words]
         words = [w for w in words if w]
-
-        #stemming
         words = [self.stemmer.stem(w) for w in words]
-
         words = [w for w in words if len(w) > 2 and w not in self.stopwords]
 
         return words
 
+    # Splits text into sentences, tokenizes each sentence, processes the words,
+    # and records each word's position in the index under the given document ID.
     def tokenizeSentences(self, text, fileNum):
         sentences = text.split('.')
         position = 0
@@ -76,6 +81,7 @@ class InvertedIndex:
                 self.words[word][fileNum].append(position)
                 position += 1
 
+    # Reads all documents, preprocesses each one, and builds the inverted index.
     def documentProcessing(self):
         fobj = DocumentExtraction.Extractedfiles()
         fobj.readData()
@@ -91,21 +97,24 @@ class InvertedIndex:
 
         self.words = dict(sorted(self.words.items()))
 
+    # Writes the inverted index to a text file in the format: word -> {postings}
     def writeToFile(self, filename="inverted_index.txt"):
         with open(filename, "w") as f:
             for word, postings in sorted(self.words.items()):
                 f.write(f"{word} -> {postings}\n")
 
+    # Returns the sorted list of document IDs that contain the given word.
     def getspecificPostingList(self, word):
         if word in self.words:
             return sorted(list(self.words[word].keys()))
         return []
 
-    # to process the query and return the processed terms
+    # Takes a raw query string, applies the same preprocessing as the index
+    # (lowercasing, normalization, punctuation removal, stemming, stopword filtering),
+    # and returns a list of processed terms ready for lookup.
     def processQuery(self, query):
         query = query.lower()
         query = unidecode.unidecode(query)
-
         query = query.replace('-', ' ')
         parts = query.split()
 
@@ -113,12 +122,7 @@ class InvertedIndex:
         for w in parts:
             w = w.translate(self.punctuation_table)
             w = self.stemmer.stem(w)
-
             if len(w) > 2 and w not in self.stopwords:
                 processed.append(w)
 
-        return processed 
-    
-
-
-    
+        return processed

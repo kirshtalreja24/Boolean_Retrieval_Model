@@ -1,52 +1,55 @@
 import ast
+import re
+
 
 class Queries:
     def __init__(self, processor_obj, filepath="inverted_index.txt"):
-        self.index = self.load_index(filepath)  # positional inverted index
+        self.index = self.load_index(filepath)
         self.processor = processor_obj
-        self.all_docs = self.getAllDocs()  # normalized as strings
+        self.all_docs = self.getAllDocs()
 
-    # 🔹 Load inverted index
+    # Reads the inverted index from a text file and returns it as a dictionary.
+    # Each line is expected in the format: word -> {doc_id: [positions]}
     def load_index(self, filepath):
         index = {}
         with open(filepath, "r") as f:
             for line in f:
                 if "->" not in line:
                     continue
-                word, postings = line.split("->")
+                word, postings = line.split("->", 1)
                 index[word.strip()] = ast.literal_eval(postings.strip())
         return index
 
-    # 🔹 Get all docs
+    # Collects and returns the set of all document IDs present in the index.
     def getAllDocs(self):
         docs = set()
         for postings in self.index.values():
             for doc_id in postings.keys():
-                docs.add(doc_id)
+                docs.add(str(doc_id))
         return docs
 
-    # 🔹 Posting list (always returns list of strings)
+    # Returns the list of document IDs that contain the given term.
     def get_posting(self, term):
         return sorted([str(doc) for doc in self.index.get(term, {}).keys()])
 
-    # 🔹 Boolean operations (handle None / empty safely)
+    # Returns documents that appear in both lists a and b.
     def AND(self, a, b):
         a = a or []
         b = b or []
         return sorted(set(a) & set(b))
 
+    # Returns documents that appear in either list a or b.
     def OR(self, a, b):
         a = a or []
         b = b or []
         return sorted(set(a) | set(b))
 
+    # Returns all documents that are NOT in list a.
     def NOT(self, a):
         a = a or []
-        if not a:
-            return sorted(self.all_docs)
         return sorted(self.all_docs - set(a))
 
-    # 🔹 Proximity Query (t1 before t2 within k)
+    # Finds documents where term t1 appears before t2 within k words of each other.
     def proximityQuery(self, t1, t2, k):
         if t1 not in self.index or t2 not in self.index:
             return []
@@ -54,18 +57,18 @@ class Queries:
         result = []
         p1 = self.index[t1]
         p2 = self.index[t2]
-
         common_docs = set(p1.keys()) & set(p2.keys())
 
         for doc in common_docs:
             pos1 = p1[doc]
             pos2 = p2[doc]
-            i, j = 0, 0
-            while i < len(pos1) and j < len(pos2):
+            i = j = 0
+            found = False
+            while i < len(pos1) and j < len(pos2) and not found:
                 diff = pos2[j] - pos1[i] - 1
                 if 0 <= diff <= k:
-                    result.append(doc)
-                    break
+                    result.append(str(doc))
+                    found = True
                 elif pos1[i] < pos2[j]:
                     i += 1
                 else:
@@ -73,7 +76,7 @@ class Queries:
 
         return sorted(result)
 
-    # 🔹 Phrase Query
+    # Finds documents that contain the exact sequence of words in the given phrase.
     def phraseQuery(self, phrase):
         words = phrase.split()
         words_proc = []
@@ -87,45 +90,54 @@ class Queries:
                 return []
             postings.append(self.index[w])
 
-        result = []
         common_docs = set(postings[0].keys())
         for p in postings[1:]:
             common_docs &= set(p.keys())
 
+        result = []
         for doc in common_docs:
-            positions = postings[0][doc]
+            positions = list(postings[0][doc])
             for i in range(1, len(postings)):
                 next_pos = postings[i][doc]
-                temp = []
-                for pos in positions:
-                    if pos + 1 in next_pos:
-                        temp.append(pos + 1)
+                temp = [pos + 1 for pos in positions if pos + 1 in next_pos]
                 positions = temp
                 if not positions:
                     break
             if positions:
-                result.append(doc)
+                result.append(str(doc))
 
         return sorted(result)
 
-    # 🔹 Tokenize (handles phrases, proximity, parentheses)
+    # Splits a raw query string into a list of tokens.
+    # Handles boolean operators, parentheses, phrase queries (quoted strings),
+    # and proximity queries (t1 t2 /k format).
     def tokenize(self, query):
         tokens = []
         i = 0
         words = query.split()
+
         while i < len(words):
             word = words[i]
 
-            # Proximity query: t1 t2 /k
-            if i + 2 < len(words) and words[i+2].startswith('/'):
-                tokens.append((words[i], words[i+1], words[i+2]))
+            # Proximity query detected when the third word starts with /digit
+            if i + 2 < len(words) and re.search(r'/\d+', words[i + 2]):
+                t1    = words[i].strip('()')
+                t2    = words[i + 1].strip('()')
+                raw_k = words[i + 2].strip('()')
+                lead  = words[i].count('(')
+                trail = words[i + 2].count(')')
+                for _ in range(lead):
+                    tokens.append('(')
+                tokens.append((t1, t2, raw_k))
+                for _ in range(trail):
+                    tokens.append(')')
                 i += 3
                 continue
 
-            # Phrase query
+            # Phrase query: collect words until the closing quote is found
             if word.startswith('"'):
                 phrase = word[1:]
-                while not words[i].endswith('"'):
+                while i < len(words) - 1 and not words[i].endswith('"'):
                     i += 1
                     phrase += ' ' + words[i].replace('"', '')
                 phrase = phrase.rstrip('"')
@@ -133,98 +145,131 @@ class Queries:
                 i += 1
                 continue
 
-            # Parentheses handling
+            # Strip all leading parentheses
+            leading_parens = []
             while word.startswith('('):
-                tokens.append('(')
+                leading_parens.append('(')
                 word = word[1:]
+
+            # Strip all trailing parentheses
+            trailing_parens = []
             while word.endswith(')'):
-                if word[:-1]:
-                    word = word[:-1]
-                tokens.append(')')
+                trailing_parens.append(')')
                 word = word[:-1]
 
-            # Boolean operators -> normalized to uppercase
-            if word.lower() in ('and', 'or', 'not'):
-                tokens.append(word.upper())
-            elif word not in ('(', ')', ''):
-                tokens.append(word)
+            tokens.extend(leading_parens)
+
+            if word:
+                if word.lower() in ('and', 'or', 'not'):
+                    tokens.append(word.upper())
+                else:
+                    tokens.append(word)
+
+            tokens.extend(trailing_parens)
+
             i += 1
 
         return tokens
 
-    # 🔹 Infix → Postfix conversion
+    # Converts a list of tokens from infix order to postfix order
+    # using the Shunting-Yard algorithm, respecting operator precedence:
+    # NOT (highest) > AND > OR (lowest).
     def infix_to_postfix(self, tokens):
         precedence = {'NOT': 3, 'AND': 2, 'OR': 1}
         output = []
-        stack = []
+        stack  = []
+
         for token in tokens:
-            token_upper = token.upper() if isinstance(token, str) else token
             if isinstance(token, tuple):
                 output.append(token)
-            elif token_upper not in precedence and token not in ('(', ')'):
-                output.append(token)
+
+            elif isinstance(token, str) and token in ('AND', 'OR', 'NOT'):
+                while (stack
+                       and stack[-1] != '('
+                       and isinstance(stack[-1], str)
+                       and precedence.get(stack[-1], 0) >= precedence.get(token, 0)):
+                    output.append(stack.pop())
+                stack.append(token)
+
             elif token == '(':
                 stack.append(token)
+
             elif token == ')':
                 while stack and stack[-1] != '(':
                     output.append(stack.pop())
-                stack.pop()
+                if stack:
+                    stack.pop()
+
             else:
-                while (stack and stack[-1] != '(' and
-                       precedence.get(stack[-1].upper(), 0) >= precedence.get(token_upper, 0)):
-                    output.append(stack.pop())
-                stack.append(token_upper)
+                output.append(token)
+
         while stack:
-            output.append(stack.pop())
+            top = stack.pop()
+            if top != '(':
+                output.append(top)
+
         return output
 
-    # 🔹 Evaluate postfix
+    # Evaluates a postfix token list and returns the matching document IDs.
+    # Operands are pushed onto the stack; operators pop and combine them.
     def evaluate_postfix(self, tokens):
         stack = []
+
         for token in tokens:
+
             if isinstance(token, tuple):
-                t1, t2, k = token
-                k = int(k[1:])
-                p1 = self.processor.processQuery(t1)
-                p2 = self.processor.processQuery(t2)
-                t1 = p1[0] if p1 else t1
-                t2 = p2[0] if p2 else t2
-                stack.append(self.proximityQuery(t1, t2, k) or [])
+                t1_raw, t2_raw, k_raw = token
+                k_match = re.search(r'\d+', k_raw)
+                if not k_match:
+                    raise ValueError(f"Invalid proximity value: {k_raw!r}")
+                k = int(k_match.group())
+                p1 = self.processor.processQuery(t1_raw)
+                p2 = self.processor.processQuery(t2_raw)
+                t1 = p1[0] if p1 else t1_raw
+                t2 = p2[0] if p2 else t2_raw
+                stack.append(self.proximityQuery(t1, t2, k))
+
             elif token == 'AND':
+                if len(stack) < 2:
+                    raise ValueError("Invalid query: AND requires two operands")
                 b = stack.pop() or []
                 a = stack.pop() or []
                 stack.append(self.AND(a, b))
+
             elif token == 'OR':
+                if len(stack) < 2:
+                    raise ValueError("Invalid query: OR requires two operands")
                 b = stack.pop() or []
                 a = stack.pop() or []
                 stack.append(self.OR(a, b))
+
             elif token == 'NOT':
+                if not stack:
+                    raise ValueError("Invalid query: NOT has no operand")
                 a = stack.pop() or []
                 stack.append(self.NOT(a))
+
             else:
-                # Phrase or single term
                 if ' ' in token:
                     res = self.phraseQuery(token)
-                    stack.append(res if res is not None else [])
                 else:
                     p = self.processor.processQuery(token)
                     term = p[0] if p else token
                     res = self.get_posting(term)
-                    stack.append(res if res is not None else [])
+                stack.append(res if res is not None else [])
 
         return stack[0] if stack else []
 
-    # 🔹 Main query processor
+    # Runs the full query pipeline: tokenize -> convert to postfix -> evaluate.
     def queryProcessing(self, query):
-        tokens = self.tokenize(query)
+        tokens  = self.tokenize(query)
         postfix = self.infix_to_postfix(tokens)
         return self.evaluate_postfix(postfix)
 
-    # 🔹 Wrapper
     def queryInput(self, query):
         return self.queryProcessing(query)
 
-    # 🔹 Display results
+    # Prints the total number of results and the list of matching document IDs.
     def generateResultSet(self, result):
         print("total documents found:", len(result))
         print("Result:", result)
