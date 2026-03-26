@@ -24,12 +24,10 @@ index.documentProcessing()
 # print("Your Output:", ar1)
 # print()
 
-# arr = ['31', '28', '37', '30', '7', '10', '14', '1', '6', '41', '15', '11',
-#        '29', '26', '52', '13', '32', '44', '4', '8', '22', '38', '48', '0', 
-#        '47', '2', '23', '9', '3', '5', '12', '55']
+# arr = ['31', '28', '50', '53', '46', '37', '54', '42', '7', '10', '14', '18', '6', '49', '41', '15', '11', '45', '13', '21', '44', '16', '4', '8', '22', '40', '20', '38', '48', '47', '51', '43', '23', '39', '9', '3', '5', '12', '55']
 
 # arr = sorted([int(x) for x in arr])
-
+# print(len(arr))
 # print("Expected:", arr)
 # print()
 
@@ -40,7 +38,6 @@ index.documentProcessing()
     
 
 
-
 qp = Queries(index)
 
 while True:
@@ -49,5 +46,7 @@ while True:
         break
 
     result = qp.queryInput(q)
+    print("total documents found:", len(result))
     print("Result:", result)
     print()
+# print(qp.getAllDocs())
