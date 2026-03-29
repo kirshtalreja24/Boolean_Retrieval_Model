@@ -77,6 +77,7 @@ class Queries:
         return sorted(result)
 
     # Finds documents that contain the exact sequence of words in the given phrase.
+    # Format for phrase queries: "word1 word2 word3" -> words should be enclosed in quotes, if they are not then they will be treated as normal terms and not as a phrase query.
     def phraseQuery(self, phrase):
         words = phrase.split()
         words_proc = []
