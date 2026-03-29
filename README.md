@@ -6,9 +6,8 @@ A Boolean Information Retrieval system built in Python with a Streamlit web inte
 
 - **Positional Inverted Index** — tracks every term's position in every document for phrase and proximity lookups
 - **Boolean Queries** — `AND`, `OR`, `NOT` with full operator precedence and parentheses grouping
-- **Phrase Queries** — exact multi-word phrase matching (e.g. `"air crash"`)
-- **Proximity Queries** — positional distance search (e.g. `crash land /2`)
-- **Combined Queries** — mix of all query types (e.g. `"air crash" AND NOT boeing`)
+- **Phrase Queries** — exact multi-word phrase matching (e.g. `"Hillary Clinton"`)
+- **Proximity Queries** — positional distance search (e.g. `keep out /2`)
 - **Text Preprocessing** — lowercasing, contraction expansion, Unicode normalization, stemming (Porter), and stopword filtering
 - **Streamlit UI** — dark-themed web interface with a query guide sidebar and result metrics
 
