@@ -40,8 +40,7 @@ Opens in your browser at `http://localhost:8501`. The index is built automatical
 | Boolean NOT | `NOT hammer` |
 | Grouped | `biggest AND (near OR box)` |
 | Phrase | `"air crash landing"` |
-| Proximity | `crash land /2` — t1 before t2 within 2 words |
-| Combined | `"air crash" AND NOT boeing` |
+| Proximity | `keep out /2` — t1 before t2 within 2 words |
 
 ## Project Structure
 
